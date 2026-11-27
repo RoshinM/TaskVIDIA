@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
-    // biome-ignore lint/a11y/noLabelWithoutControl: This label primitive is associated with controls at call sites.
     <label
       data-slot="label"
       className={cn(

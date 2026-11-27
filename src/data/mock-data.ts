@@ -37,18 +37,24 @@ export const projects: Project[] = [
     name: "Website refresh",
     description: "A clearer, more considered home for our product.",
     color: "violet",
+    createdById: "u1",
+    memberIds: ["u1", "u2", "u3"],
   },
   {
     id: "p2",
     name: "Mobile app",
     description: "Bring the everyday workflow to iOS and Android.",
     color: "green",
+    createdById: "u2",
+    memberIds: ["u2", "u1"],
   },
   {
     id: "p3",
     name: "Spring campaign",
     description: "Launch creative and landing pages for spring.",
     color: "orange",
+    createdById: "u1",
+    memberIds: ["u1", "u4"],
   },
 ];
 

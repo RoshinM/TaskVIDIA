@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CURRENT_USER_ID } from "@/lib/current-user";
 import type { Project, Task, TaskPriority, TaskType, User } from "@/types";
 
 type TaskValues = Omit<Task, "id">;
@@ -31,7 +32,7 @@ const emptyTask: TaskValues = {
   type: "TASK",
   status: "TODO",
   priority: "MEDIUM",
-  assigneeId: "u1",
+  assigneeId: CURRENT_USER_ID,
   projectId: "",
   dueDate: "",
 };
@@ -67,6 +68,10 @@ export function TaskDialog({
   );
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const selectedProject = projects.find((item) => item.id === values.projectId);
+  const assignees = users.filter(
+    (user) => !selectedProject || selectedProject.memberIds.includes(user.id),
+  );
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -133,9 +138,21 @@ export function TaskDialog({
               <Label>Project</Label>
               <Select
                 value={values.projectId}
-                onValueChange={(value) =>
-                  value && setValues({ ...values, projectId: value })
-                }
+                onValueChange={(value) => {
+                  if (!value) return;
+                  const nextProject = projects.find(
+                    (item) => item.id === value,
+                  );
+                  const keepAssignee =
+                    nextProject?.memberIds.includes(values.assigneeId) ?? true;
+                  setValues({
+                    ...values,
+                    projectId: value,
+                    assigneeId: keepAssignee
+                      ? values.assigneeId
+                      : (nextProject?.memberIds[0] ?? CURRENT_USER_ID),
+                  });
+                }}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Choose a project" />
@@ -161,7 +178,7 @@ export function TaskDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {users.map((user) => (
+                  {assignees.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.name}
                     </SelectItem>

@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CURRENT_USER_ID } from "@/lib/current-user";
 import type { Project } from "@/types";
 
 export function ProjectDialog({
@@ -26,8 +27,8 @@ export function ProjectDialog({
   project?: Project;
   onSave: (project: Project | Omit<Project, "id">) => Promise<void>;
 }) {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
+  const [name, setName] = useState(project?.name ?? "");
+  const [description, setDescription] = useState(project?.description ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -40,7 +41,13 @@ export function ProjectDialog({
       await onSave(
         project
           ? { ...project, name, description }
-          : { name, description, color: "violet" },
+          : {
+              name,
+              description,
+              color: "violet",
+              createdById: CURRENT_USER_ID,
+              memberIds: [CURRENT_USER_ID],
+            },
       );
       onOpenChange(false);
     } catch (saveError) {

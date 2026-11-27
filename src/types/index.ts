@@ -15,6 +15,8 @@ export interface Project {
   name: string;
   description: string;
   color: string;
+  createdById: string;
+  memberIds: string[];
 }
 
 export interface Task {

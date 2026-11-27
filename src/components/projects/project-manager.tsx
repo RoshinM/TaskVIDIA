@@ -7,6 +7,7 @@ import { ProjectDialog } from "@/components/projects/project-dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CURRENT_USER_ID } from "@/lib/current-user";
 import {
   createProject,
   deleteProject,
@@ -24,6 +25,7 @@ export function ProjectManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project>();
   const [deletingProject, setDeletingProject] = useState<Project>();
+  const [filter, setFilter] = useState<"all" | "mine" | "other">("all");
 
   useEffect(() => {
     Promise.all([getProjects(), getTasks()])
@@ -72,6 +74,16 @@ export function ProjectManager() {
     }
   }
 
+  const visibleProjects = projects.filter((project) => {
+    if (filter === "mine") return project.createdById === CURRENT_USER_ID;
+    if (filter === "other")
+      return (
+        project.createdById !== CURRENT_USER_ID &&
+        project.memberIds.includes(CURRENT_USER_ID)
+      );
+    return true;
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -96,31 +108,99 @@ export function ProjectManager() {
           {error}
         </p>
       )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <fieldset
+          className="m-0 inline-flex rounded-lg border-0 bg-muted p-0.5"
+          aria-label="Filter projects"
+        >
+          <Button
+            type="button"
+            size="sm"
+            variant={filter === "all" ? "default" : "ghost"}
+            className={filter === "all" ? "shadow-sm" : "text-muted-foreground"}
+            aria-pressed={filter === "all"}
+            onClick={() => setFilter("all")}
+          >
+            All projects
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={filter === "mine" ? "default" : "ghost"}
+            className={
+              filter === "mine" ? "shadow-sm" : "text-muted-foreground"
+            }
+            aria-pressed={filter === "mine"}
+            onClick={() => setFilter("mine")}
+          >
+            My projects
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={filter === "other" ? "default" : "ghost"}
+            className={
+              filter === "other" ? "shadow-sm" : "text-muted-foreground"
+            }
+            aria-pressed={filter === "other"}
+            onClick={() => setFilter("other")}
+          >
+            Other projects
+          </Button>
+        </fieldset>
+        <p className="text-xs text-muted-foreground">
+          {filter === "mine"
+            ? `${visibleProjects.length} created by you`
+            : filter === "other"
+              ? `${visibleProjects.length} shared with you`
+              : `${visibleProjects.length} total`}
+        </p>
+      </div>
       {loading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((item) => (
             <Skeleton key={item} className="h-48 rounded-xl" />
           ))}
         </div>
-      ) : projects.length === 0 ? (
+      ) : visibleProjects.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center">
           <FolderKanban className="mx-auto mb-3 size-8 text-muted-foreground" />
-          <h2 className="text-sm font-medium">No projects yet</h2>
+          <h2 className="text-sm font-medium">
+            {filter === "mine"
+              ? "No projects you created yet"
+              : filter === "other"
+                ? "No shared projects yet"
+                : "No projects yet"}
+          </h2>
           <p className="mt-1 text-xs text-muted-foreground">
-            Create your first project to give the team a place to start.
+            {filter === "mine"
+              ? "Create a project and it will show up here."
+              : filter === "other"
+                ? "You are not a member of any projects created by others yet."
+                : "Create your first project to give the team a place to start."}
           </p>
           <Button
             className="mt-4"
             size="sm"
-            onClick={() => setDialogOpen(true)}
+            onClick={() =>
+              filter !== "all" && projects.length > 0
+                ? setFilter("all")
+                : setDialogOpen(true)
+            }
           >
-            <Plus />
-            Create project
+            {filter !== "all" && projects.length > 0 ? (
+              "View all projects"
+            ) : (
+              <>
+                <Plus />
+                Create project
+              </>
+            )}
           </Button>
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {projects.map((project) => (
+          {visibleProjects.map((project) => (
             <ProjectCard
               key={project.id}
               project={project}

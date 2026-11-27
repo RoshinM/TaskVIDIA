@@ -1,4 +1,5 @@
-import { createProject, getProjects } from "@/services/mock-service";
+import { CURRENT_USER_ID } from "@/lib/current-user";
+import { createProject, getProjects, getUsers } from "@/services/mock-service";
 import type { Project } from "@/types";
 
 export async function GET() {
@@ -15,11 +16,24 @@ export async function POST(request: Request) {
     );
   }
 
+  const availableIds = new Set((await getUsers()).map((user) => user.id));
+  const requestedCreator = body.createdById;
+  const createdById =
+    requestedCreator && availableIds.has(requestedCreator)
+      ? requestedCreator
+      : CURRENT_USER_ID;
+  const requestedMembers = Array.isArray(body.memberIds) ? body.memberIds : [];
+  const memberIds = [...new Set([...requestedMembers, createdById])].filter(
+    (id) => availableIds.has(id),
+  );
+
   const project: Project = {
     id: body.id ?? crypto.randomUUID(),
     name: body.name.trim(),
     description: body.description?.trim() ?? "",
     color: body.color ?? "violet",
+    createdById,
+    memberIds,
   };
 
   return Response.json(await createProject(project), { status: 201 });

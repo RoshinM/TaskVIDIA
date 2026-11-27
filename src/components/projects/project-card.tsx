@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CURRENT_USER_ID } from "@/lib/current-user";
 import type { Project, Task } from "@/types";
 
 export function ProjectCard({
@@ -26,6 +27,7 @@ export function ProjectCard({
   const progress = tasks.length
     ? Math.round((completed / tasks.length) * 100)
     : 0;
+  const isCreator = project.createdById === CURRENT_USER_ID;
 
   return (
     <div className="relative">
@@ -45,6 +47,13 @@ export function ProjectCard({
               <CardTitle className="text-sm font-semibold group-hover:text-primary">
                 {project.name}
               </CardTitle>
+              <Badge
+                variant={isCreator ? "secondary" : "outline"}
+                className="text-[9px]"
+              >
+                {isCreator ? "Creator" : "Member"}
+              </Badge>
+              <ArrowUpRight className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
           </CardHeader>
           <CardContent>
@@ -63,6 +72,12 @@ export function ProjectCard({
                 className="h-full rounded-full bg-primary transition-[width]"
                 style={{ width: `${progress}%` }}
               />
+            </div>
+            <div className="mt-4 flex items-center justify-between">
+              <Badge variant="secondary">{tasks.length} tasks</Badge>
+              <span className="text-[10px] text-muted-foreground">
+                {project.memberIds.length} members
+              </span>
             </div>
           </CardContent>
         </Card>

@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { users } from "@/data/mock-data";
+import { CURRENT_USER_ID } from "@/lib/current-user";
 import { getProjects } from "@/services/project-service";
 import {
   createTask,
@@ -54,7 +55,7 @@ export function TaskManager({
   useEffect(() => {
     Promise.all([
       myTasks
-        ? getMyTasks("u1")
+        ? getMyTasks(CURRENT_USER_ID)
         : projectId
           ? getProjectTasks(projectId)
           : getTasks(),

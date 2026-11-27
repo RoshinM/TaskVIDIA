@@ -1,5 +1,5 @@
-import { projects, tasks } from "@/data/mock-data";
-import type { Project, Task } from "@/types";
+import { projects, tasks, users } from "@/data/mock-data";
+import type { Project, Task, User } from "@/types";
 
 // Swap these local implementations for API requests when the backend is ready.
 export async function getProjects(): Promise<Project[]> {
@@ -18,6 +18,18 @@ export async function getTask(taskId: string): Promise<Task | undefined> {
 }
 export async function getMyTasks(userId: string): Promise<Task[]> {
   return tasks.filter((task) => task.assigneeId === userId);
+}
+export async function getUsers(): Promise<User[]> {
+  return [...users];
+}
+export async function searchUsers(query: string): Promise<User[]> {
+  const term = query.trim().toLowerCase();
+  if (!term) return [...users];
+  return users.filter(
+    (user) =>
+      user.name.toLowerCase().includes(term) ||
+      user.email.toLowerCase().includes(term),
+  );
 }
 export async function createProject(project: Project): Promise<Project> {
   projects.unshift(project);
