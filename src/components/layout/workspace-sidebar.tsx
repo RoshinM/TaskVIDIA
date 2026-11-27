@@ -2,13 +2,10 @@
 
 import {
   CheckSquare2,
-  ChevronDown,
   FolderKanban,
   LayoutDashboard,
   LogOut,
   Plus,
-  Settings2,
-  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -87,13 +84,6 @@ function SidebarContent() {
       </Link>
 
       <div className="flex-1" />
-      <Link
-        href="/settings"
-        className={`mb-3 flex h-9 items-center gap-2.5 rounded-md px-2.5 text-xs ${pathname === "/settings" ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-muted-foreground hover:bg-muted"}`}
-      >
-        <Settings2 className="size-4" />
-        Settings
-      </Link>
       <div className="flex items-center gap-2.5 border-t border-sidebar-border pt-3">
         <span className="grid size-8 place-items-center rounded-full bg-violet-100 text-[10px] font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-200">
           MC

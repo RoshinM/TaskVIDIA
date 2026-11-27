@@ -1,16 +1,13 @@
 "use client";
 
-import { Bell, Search } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const titles: Record<string, string> = {
   "/": "Overview",
   "/projects": "Projects",
   "/my-tasks": "My tasks",
-  "/settings": "Settings",
 };
 
 export function WorkspaceHeader() {
@@ -29,7 +26,6 @@ export function WorkspaceHeader() {
           className="relative hidden w-56 sm:block"
           aria-label="Search tasks"
         >
-          <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             aria-label="Search tasks"
             placeholder="Search tasks..."
