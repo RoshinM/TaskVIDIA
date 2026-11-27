@@ -22,16 +22,6 @@ export function WorkspaceHeader() {
         <span className="text-foreground">{pageTitle}</span>
       </div>
       <div className="ml-auto flex items-center gap-2.5">
-        <search
-          className="relative hidden w-56 sm:block"
-          aria-label="Search tasks"
-        >
-          <Input
-            aria-label="Search tasks"
-            placeholder="Search tasks..."
-            className="h-8 pl-8 pr-12 text-xs"
-          />
-        </search>
         <ThemeToggle />
       </div>
     </header>
