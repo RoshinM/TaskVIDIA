@@ -22,14 +22,13 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CURRENT_USER_ID } from "@/lib/current-user";
-import type { Project, Task, TaskPriority, TaskType, User } from "@/types";
+import type { Project, Task, TaskPriority, User } from "@/types";
 
 type TaskValues = Omit<Task, "id">;
 
 const emptyTask: TaskValues = {
   title: "",
   description: "",
-  type: "TASK",
   status: "TODO",
   priority: "MEDIUM",
   assigneeId: CURRENT_USER_ID,
@@ -57,7 +56,6 @@ export function TaskDialog({
       ? {
           title: task.title,
           description: task.description,
-          type: task.type,
           status: task.status,
           priority: task.priority,
           assigneeId: task.assigneeId,
@@ -133,7 +131,7 @@ export function TaskDialog({
               }
             />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="space-y-2">
               <Label>Project</Label>
               <Select
@@ -181,26 +179,6 @@ export function TaskDialog({
                   {assignees.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Type</Label>
-              <Select
-                value={values.type}
-                onValueChange={(value) =>
-                  value && setValues({ ...values, type: value as TaskType })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {["TASK", "FEATURE", "BUG", "IMPROVEMENT"].map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {type.replace("_", " ")}
                     </SelectItem>
                   ))}
                 </SelectContent>

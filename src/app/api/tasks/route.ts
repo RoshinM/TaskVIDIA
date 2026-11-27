@@ -27,7 +27,6 @@ export async function POST(request: Request) {
     id: body.id ?? crypto.randomUUID(),
     title: body.title.trim(),
     description: body.description?.trim() ?? "",
-    type: body.type ?? "TASK",
     status: body.status ?? "TODO",
     priority: body.priority ?? "MEDIUM",
     assigneeId: body.assigneeId,
