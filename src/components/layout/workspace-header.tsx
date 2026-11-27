@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { Input } from "@/components/ui/input";
 
 const titles: Record<string, string> = {
   "/": "Overview",

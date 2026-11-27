@@ -1,31 +1,70 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { login as loginRequest, register as registerRequest } from "@/services/auth-service";
 
 export default function LoginPage() {
   const [registering, setRegistering] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+    if (!showSuccessToast) return;
 
-  function submit(event: React.SubmitEvent<HTMLFormElement>) {
+    const timeout = window.setTimeout(() => setShowSuccessToast(false), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [showSuccessToast]);
+
+  async function submit(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError("");
+    setSubmitting(true);
 
-    router.push("/");
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const email = String(form.get("email") ?? "");
+    const password = String(form.get("password") ?? "");
+
+    try {
+      if (registering) {
+        const result = await registerRequest(
+          String(form.get("name") ?? ""),
+          email,
+          password,
+        );
+
+        formElement.reset();
+        setRegistering(false);
+        setShowSuccessToast(true);
+        return;
+      }
+
+      const result = await loginRequest(email, password);
+      router.push("/");
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : "Could not continue.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
-
 
   return (
     <main className="flex min-h-screen items-center justify-center px-5 py-10">
       <section className="w-full max-w-sm">
         <div className="w-full">
-          <div
-            className="mb-4 gap-2 text-4xl font-semibold tracking-tight text-center"
-          >
+          <div className="mb-4 gap-2 text-4xl font-semibold tracking-tight text-center">
             TaskVIDIA
           </div>
           <div className="mb-7">
@@ -41,6 +80,7 @@ export default function LoginPage() {
                     <Label htmlFor="name">Your name</Label>
                     <Input
                       id="name"
+                      name="name"
                       autoComplete="name"
                       required
                       placeholder="Maya Chen"
@@ -51,6 +91,7 @@ export default function LoginPage() {
                   <Label htmlFor="email">Email address</Label>
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     autoComplete="email"
                     required
@@ -61,6 +102,7 @@ export default function LoginPage() {
                   <Label htmlFor="password">Password</Label>
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     minLength={8}
                     autoComplete={
@@ -70,8 +112,21 @@ export default function LoginPage() {
                     placeholder="At least 8 characters"
                   />
                 </div>
-                <Button type="submit" className="w-full cursor-pointer">
-                  {registering ? "Create account" : "Sign in"}
+                {error && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {error}
+                  </p>
+                )}
+                <Button
+                  type="submit"
+                  className="w-full cursor-pointer"
+                  disabled={submitting}
+                >
+                  {submitting
+                    ? "Please wait…"
+                    : registering
+                      ? "Create account"
+                      : "Sign in"}
                 </Button>
               </form>
             </CardContent>
@@ -82,6 +137,8 @@ export default function LoginPage() {
               type="button"
               className="ml-1 font-medium text-primary hover:underline"
               onClick={() => {
+                setError("");
+                setShowSuccessToast(false);
                 setRegistering(!registering);
               }}
             >
@@ -90,6 +147,13 @@ export default function LoginPage() {
           </p>
         </div>
       </section>
+      {showSuccessToast && (
+        <Toast
+          title="Successfully registered"
+          description="You can sign in now."
+          onClose={() => setShowSuccessToast(false)}
+        />
+      )}
     </main>
   );
 }

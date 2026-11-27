@@ -8,6 +8,8 @@ export interface User {
   color: string;
 }
 
+export type { AuthUser, AuthPayload, AuthResponse } from "./auth";
+
 export interface Project {
   id: string;
   name: string;
