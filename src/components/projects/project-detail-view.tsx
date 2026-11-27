@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CURRENT_USER_ID } from "@/lib/current-user";
+import { getInitials } from "@/lib/utils";
 import { getProject, updateProject } from "@/services/project-service";
 import { searchUsers } from "@/services/user-service";
 import type { Project, User } from "@/types";
@@ -111,7 +112,7 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
               {members.map((user) => (
                 <Avatar key={user.id} size="sm">
                   <AvatarFallback className="bg-secondary text-[9px] font-medium text-secondary-foreground">
-                    {user.initials}
+                    {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
               ))}

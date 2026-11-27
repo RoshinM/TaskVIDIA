@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getInitials } from "@/lib/utils";
 import type { Project, Task, TaskStatus, User } from "@/types";
 
 export function TaskTable({
@@ -102,7 +103,7 @@ export function TaskTable({
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Avatar size="sm">
                           <AvatarFallback className="bg-secondary text-[9px] font-medium text-secondary-foreground">
-                            {assignee?.initials ?? "?"}
+                            {assignee ? getInitials(assignee.name) : "?"}
                           </AvatarFallback>
                         </Avatar>
                         {assignee?.name.split(" ")[0] ?? "Unassigned"}

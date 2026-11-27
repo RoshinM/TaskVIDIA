@@ -5,28 +5,24 @@ export const users: User[] = [
     id: "u1",
     name: "Maya Chen",
     email: "maya@studio.co",
-    initials: "MC",
     color: "lavender",
   },
   {
     id: "u2",
     name: "Noah Patel",
     email: "noah@studio.co",
-    initials: "NP",
     color: "peach",
   },
   {
     id: "u3",
     name: "Olivia Kim",
     email: "olivia@studio.co",
-    initials: "OK",
     color: "mint",
   },
   {
     id: "u4",
     name: "Ethan Ross",
     email: "ethan@studio.co",
-    initials: "ER",
     color: "blue",
   },
 ];

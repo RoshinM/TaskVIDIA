@@ -17,6 +17,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { getInitials } from "@/lib/utils";
+
+const currentUser = {
+  name: "Maya Chen",
+  email: "maya@studio.co",
+};
 
 const links = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -86,12 +92,14 @@ function SidebarContent() {
       <div className="flex-1" />
       <div className="flex items-center gap-2.5 border-t border-sidebar-border pt-3">
         <span className="grid size-8 place-items-center rounded-full bg-violet-100 text-[10px] font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-200">
-          MC
+          {getInitials(currentUser.name)}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-xs font-medium">Maya Chen</span>
+          <span className="block truncate text-xs font-medium">
+            {currentUser.name}
+          </span>
           <span className="block truncate text-[10px] text-muted-foreground">
-            maya@studio.co
+            {currentUser.email}
           </span>
         </span>
         <Link

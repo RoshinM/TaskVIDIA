@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { User } from "@/types";
+import { getInitials } from "@/lib/utils";
 
 export function MemberPicker({
   users,
@@ -65,7 +66,7 @@ export function MemberPicker({
               >
                 <Avatar size="sm">
                   <AvatarFallback className="bg-secondary text-[9px] font-medium text-secondary-foreground">
-                    {user.initials}
+                    {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
@@ -109,7 +110,7 @@ export function MemberPicker({
           >
             <Avatar size="sm">
               <AvatarFallback className="bg-muted text-[9px] font-medium text-muted-foreground">
-                {user.initials}
+                {getInitials(user.name)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
