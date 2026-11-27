@@ -49,7 +49,7 @@ export function TaskTable({
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/40 hover:bg-muted/40">
-              <TableHead className="min-w-[230px]">Task</TableHead>
+              <TableHead className="min-w-57.5">Task</TableHead>
               {showProject && <TableHead>Project</TableHead>}
               <TableHead>Assignee</TableHead>
               <TableHead>Status</TableHead>

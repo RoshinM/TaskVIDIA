@@ -39,7 +39,7 @@ export function ProjectCard({
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between">
               <span className="grid size-9 place-items-center rounded-lg bg-accent text-accent-foreground">
-                <FolderKanban className="size-[18px]" />
+                <FolderKanban className="size-4.5" />
               </span>
               {(onEdit || onDelete) && <span className="size-8" aria-hidden />}
             </div>

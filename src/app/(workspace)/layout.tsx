@@ -12,7 +12,7 @@ export default function WorkspaceLayout({ children }: { children: ReactNode }) {
         <Suspense fallback={null}>
           <WorkspaceHeader />
         </Suspense>
-        <main className="mx-auto w-full max-w-[1320px] px-4 py-7 sm:px-6 lg:px-10">
+        <main className="mx-auto w-full max-w-330 px-4 py-7 sm:px-6 lg:px-10">
           {children}
         </main>
       </div>
