@@ -1,6 +1,5 @@
-import { searchUsers } from "@/services/mock-service";
+import { apiRequestServer } from "@/lib/api-server";
 
 export async function GET(request: Request) {
-  const query = new URL(request.url).searchParams.get("q") ?? "";
-  return Response.json(await searchUsers(query));
+  return apiRequestServer("/users", { query: request });
 }

@@ -24,7 +24,7 @@ export function TeamDialog({
   onOpenChange: (open: boolean) => void;
   project: Project;
   users: User[];
-  onSave: (project: Project) => Promise<void>;
+  onSave: (userIds: string[]) => Promise<void>;
 }) {
   const [memberIds, setMemberIds] = useState<string[]>(project.memberIds);
   const [error, setError] = useState("");
@@ -36,10 +36,7 @@ export function TeamDialog({
     setError("");
 
     try {
-      await onSave({
-        ...project,
-        memberIds: [...new Set([...memberIds, project.createdById])],
-      });
+      await onSave([...new Set([...memberIds, project.createdById])]);
       onOpenChange(false);
     } catch (saveError) {
       setError(

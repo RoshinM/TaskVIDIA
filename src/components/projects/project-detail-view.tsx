@@ -11,24 +11,26 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CURRENT_USER_ID } from "@/lib/current-user";
+import { useWorkspaceData } from "@/components/providers/workspace-data-provider";
 import { getInitials } from "@/lib/utils";
-import { getProject, updateProject } from "@/services/project-service";
-import { searchUsers } from "@/services/user-service";
+import {
+  getProject,
+  setProjectMembers,
+  updateProject,
+} from "@/services/project-service";
 import type { Project, User } from "@/types";
 
 export function ProjectDetailView({ projectId }: { projectId: string }) {
+  const { user, users, refreshProjects } = useWorkspaceData();
   const [project, setProject] = useState<Project>();
-  const [users, setUsers] = useState<User[]>([]);
   const [error, setError] = useState("");
   const [projectDialogOpen, setProjectDialogOpen] = useState(false);
   const [teamDialogOpen, setTeamDialogOpen] = useState(false);
 
   useEffect(() => {
-    Promise.all([getProject(projectId), searchUsers("")])
-      .then(([projectItem, userItems]) => {
+    getProject(projectId)
+      .then((projectItem) => {
         setProject(projectItem);
-        setUsers(userItems);
       })
       .catch((loadError: unknown) =>
         setError(
@@ -66,14 +68,19 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
   const members = project.memberIds
     .map((id) => users.find((user) => user.id === id))
     .filter((user): user is User => Boolean(user));
-  const isCreator = project.createdById === CURRENT_USER_ID;
+  const isCreator = Boolean(user) && project.createdById === user?.id;
+  const currentProjectId = project.id;
 
-  async function saveProject(next: Project | Omit<Project, "id">) {
-    if ("id" in next) setProject(await updateProject(next));
+  async function saveProject(values: Pick<Project, "name" | "description">) {
+    const updated = await updateProject({ ...values, id: currentProjectId });
+    setProject(updated);
+    await refreshProjects();
   }
 
-  async function saveTeam(next: Project) {
-    setProject(await updateProject(next));
+  async function saveTeam(userIds: string[]) {
+    const updated = await setProjectMembers(currentProjectId, userIds);
+    setProject(updated);
+    await refreshProjects();
   }
 
   return (
@@ -97,13 +104,15 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
             {project.description}
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => setProjectDialogOpen(true)}
-        >
-          Manage project
-        </Button>
+        {isCreator && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setProjectDialogOpen(true)}
+          >
+            Manage project
+          </Button>
+        )}
       </section>
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-4 py-4">
@@ -125,16 +134,19 @@ export function ProjectDetailView({ projectId }: { projectId: string }) {
               </p>
             </div>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setTeamDialogOpen(true)}
-          >
-            Manage team
-          </Button>
+          {isCreator && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setTeamDialogOpen(true)}
+            >
+              Manage team
+            </Button>
+          )}
         </CardContent>
       </Card>
       <TaskManager
+        key={projectId}
         title="Project tasks"
         description="Track the work connected to this project."
         projectId={projectId}

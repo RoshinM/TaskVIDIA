@@ -97,40 +97,42 @@ export function MemberPicker({
           })
         )}
       </div>
-      <div className="space-y-1">
-        {term && results.length === 0 && (
-          <p className="py-2 text-center text-xs text-muted-foreground">
-            No people found.
-          </p>
-        )}
-        {results.map((user) => (
-          <div
-            key={user.id}
-            className="flex items-center gap-2 rounded-md px-1.5 py-1"
-          >
-            <Avatar size="sm">
-              <AvatarFallback className="bg-muted text-[9px] font-medium text-muted-foreground">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium">{user.name}</p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {user.email}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label={`Add ${user.name}`}
-              onClick={() => onChange([...selectedIds, user.id])}
+      {term && (
+        <div className="space-y-1">
+          {results.length === 0 && (
+            <p className="py-2 text-center text-xs text-muted-foreground">
+              No people found.
+            </p>
+          )}
+          {results.map((user) => (
+            <div
+              key={user.id}
+              className="flex items-center gap-2 rounded-md px-1.5 py-1"
             >
-              <Plus />
-            </Button>
-          </div>
-        ))}
-      </div>
+              <Avatar size="sm">
+                <AvatarFallback className="bg-muted text-[9px] font-medium text-muted-foreground">
+                  {getInitials(user.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium">{user.name}</p>
+                <p className="truncate text-[10px] text-muted-foreground">
+                  {user.email}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label={`Add ${user.name}`}
+                onClick={() => onChange([...selectedIds, user.id])}
+              >
+                <Plus />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

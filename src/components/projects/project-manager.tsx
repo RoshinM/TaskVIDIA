@@ -7,20 +7,21 @@ import { ProjectDialog } from "@/components/projects/project-dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CURRENT_USER_ID } from "@/lib/current-user";
+import { useWorkspaceData } from "@/components/providers/workspace-data-provider";
 import {
   createProject,
   deleteProject,
-  getProjects,
   updateProject,
 } from "@/services/project-service";
 import { getTasks } from "@/services/task-service";
 import type { Project, Task } from "@/types";
 
 export function ProjectManager() {
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { user, projects, refreshProjects, loading: workspaceLoading } =
+    useWorkspaceData();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project>();
@@ -28,42 +29,56 @@ export function ProjectManager() {
   const [filter, setFilter] = useState<"all" | "mine" | "other">("all");
 
   useEffect(() => {
-    Promise.all([getProjects(), getTasks()])
-      .then(([projectItems, taskItems]) => {
-        setProjects(projectItems);
-        setTasks(taskItems);
+    let active = true;
+
+    getTasks()
+      .then((taskItems) => {
+        if (active) setTasks(taskItems);
       })
       .catch((loadError: unknown) => {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Could not load projects.",
-        );
+        if (active) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Could not load tasks.",
+          );
+        }
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        if (active) setTasksLoading(false);
+      });
 
-  async function saveProject(project: Project | Omit<Project, "id">) {
-    const saved =
-      "id" in project
-        ? await updateProject(project)
-        : await createProject(project);
-    setProjects((current) =>
-      "id" in project
-        ? current.map((item) => (item.id === saved.id ? saved : item))
-        : [saved, ...current],
-    );
+    return () => {
+      active = false;
+    };
+  }, [refreshKey]);
+
+  const loading = workspaceLoading || tasksLoading;
+
+  async function saveProject(values: Pick<Project, "name" | "description">) {
+    try {
+      if (editingProject) {
+        await updateProject({ ...values, id: editingProject.id });
+      } else {
+        await createProject(values);
+      }
+      await refreshProjects();
+      setRefreshKey((current) => current + 1);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Could not save this project.",
+      );
+      throw saveError;
+    }
   }
 
   async function removeProject(project: Project) {
     try {
       await deleteProject(project.id);
-      setProjects((current) =>
-        current.filter((item) => item.id !== project.id),
-      );
-      setTasks((current) =>
-        current.filter((task) => task.projectId !== project.id),
-      );
+      await refreshProjects();
+      setRefreshKey((current) => current + 1);
       setDeletingProject(undefined);
     } catch (deleteError) {
       setError(
@@ -75,11 +90,13 @@ export function ProjectManager() {
   }
 
   const visibleProjects = projects.filter((project) => {
-    if (filter === "mine") return project.createdById === CURRENT_USER_ID;
+    const currentUserId = user?.id ?? "";
+    if (filter === "mine") return Boolean(currentUserId) && project.createdById === currentUserId;
     if (filter === "other")
       return (
-        project.createdById !== CURRENT_USER_ID &&
-        project.memberIds.includes(CURRENT_USER_ID)
+        Boolean(currentUserId) &&
+        project.createdById !== currentUserId &&
+        project.memberIds.includes(currentUserId)
       );
     return true;
   });
@@ -205,11 +222,19 @@ export function ProjectManager() {
               key={project.id}
               project={project}
               tasks={tasks.filter((task) => task.projectId === project.id)}
-              onEdit={() => {
-                setEditingProject(project);
-                setDialogOpen(true);
-              }}
-              onDelete={() => setDeletingProject(project)}
+              onEdit={
+                project.createdById === user?.id
+                  ? () => {
+                      setEditingProject(project);
+                      setDialogOpen(true);
+                    }
+                  : undefined
+              }
+              onDelete={
+                project.createdById === user?.id
+                  ? () => setDeletingProject(project)
+                  : undefined
+              }
             />
           ))}
         </div>

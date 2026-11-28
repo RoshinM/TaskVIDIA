@@ -8,7 +8,8 @@ import {
   Plus,
 } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useWorkspaceData } from "@/components/providers/workspace-data-provider";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -17,12 +18,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { logout } from "@/services/auth-service";
 import { getInitials } from "@/lib/utils";
-
-const currentUser = {
-  name: "Maya Chen",
-  email: "maya@studio.co",
-};
 
 const links = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -32,6 +29,16 @@ const links = [
 
 function SidebarContent() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, projects } = useWorkspaceData();
+
+  async function signOut() {
+    try {
+      await logout();
+    } finally {
+      router.push("/login");
+    }
+  }
 
   return (
     <div className="flex h-full flex-col px-3 py-4">
@@ -66,49 +73,49 @@ function SidebarContent() {
         <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
           Your projects
         </p>
-        <Button variant="ghost" size="icon-xs" aria-label="Create project">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          aria-label="Create project"
+          onClick={() => router.push("/projects")}
+        >
           <Plus />
         </Button>
       </div>
-      <Link
-        href="/projects"
-        className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-      >
-        <span className="size-2 rounded-sm bg-violet-400" /> Website refresh
-      </Link>
-      <Link
-        href="/projects"
-        className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-      >
-        <span className="size-2 rounded-sm bg-emerald-400" /> Mobile app
-      </Link>
-      <Link
-        href="/projects"
-        className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-      >
-        <span className="size-2 rounded-sm bg-amber-400" /> Spring campaign
-      </Link>
+      {projects.slice(0, 3).map((project) => (
+        <Link
+          key={project.id}
+          href={`/projects/${project.id}`}
+          className="flex h-8 items-center gap-2.5 rounded-md px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <span className="size-2 shrink-0 rounded-sm bg-muted-foreground/40" />
+          <span className="truncate">{project.name}</span>
+        </Link>
+      ))}
 
       <div className="flex-1" />
       <div className="flex items-center gap-2.5 border-t border-sidebar-border pt-3">
         <span className="grid size-8 place-items-center rounded-full bg-violet-100 text-[10px] font-semibold text-violet-700 dark:bg-violet-950 dark:text-violet-200">
-          {getInitials(currentUser.name)}
+          {getInitials(user?.name ?? "User")}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-xs font-medium">
-            {currentUser.name}
+            {user?.name ?? "Account"}
           </span>
           <span className="block truncate text-[10px] text-muted-foreground">
-            {currentUser.email}
+            {user?.email ?? ""}
           </span>
         </span>
-        <Link
-          href="/login"
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
           aria-label="Sign out"
-          className="rounded-md p-2 text-muted-foreground hover:bg-muted"
+          onClick={signOut}
         >
           <LogOut className="size-4" />
-        </Link>
+        </Button>
       </div>
     </div>
   );

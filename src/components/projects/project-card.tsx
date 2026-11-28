@@ -1,5 +1,8 @@
-import { ArrowUpRight, FolderKanban, MoreHorizontal } from "lucide-react";
+"use client";
+
+import { FolderKanban, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { useWorkspaceData } from "@/components/providers/workspace-data-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +12,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CURRENT_USER_ID } from "@/lib/current-user";
 import type { Project, Task } from "@/types";
 
 export function ProjectCard({
@@ -23,11 +25,12 @@ export function ProjectCard({
   onEdit?: () => void;
   onDelete?: () => void;
 }) {
+  const { user } = useWorkspaceData();
   const completed = tasks.filter((task) => task.status === "DONE").length;
   const progress = tasks.length
     ? Math.round((completed / tasks.length) * 100)
     : 0;
-  const isCreator = project.createdById === CURRENT_USER_ID;
+  const isCreator = Boolean(user) && project.createdById === user?.id;
 
   return (
     <div className="relative">
@@ -53,7 +56,6 @@ export function ProjectCard({
               >
                 {isCreator ? "Creator" : "Member"}
               </Badge>
-              <ArrowUpRight className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
             </div>
           </CardHeader>
           <CardContent>
