@@ -1,6 +1,11 @@
-import { apiRequest } from "@/lib/api-client";
+import { apiRequestClient } from "@/lib/api-client";
 import type { User } from "@/types";
 
+export function getUsers() {
+  return apiRequestClient<User[]>("/api/users");
+}
+
 export function searchUsers(query: string) {
-  return apiRequest<User[]>(`/api/users?q=${encodeURIComponent(query)}`);
+  const term = query.trim();
+  return term ? apiRequestClient<User[]>(`/api/users?q=${encodeURIComponent(term)}`) : getUsers();
 }

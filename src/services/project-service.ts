@@ -1,28 +1,62 @@
-import { apiRequest } from "@/lib/api-client";
+import { apiRequestClient } from "@/lib/api-client";
 import type { Project } from "@/types";
 
+export type ProjectFormValues = Pick<Project, "name" | "description"> & {
+  memberIds?: string[];
+};
+
 export function getProjects() {
-  return apiRequest<Project[]>("/api/projects");
+  return apiRequestClient<Project[]>("/api/projects");
 }
 
 export function getProject(projectId: string) {
-  return apiRequest<Project>(`/api/projects/${projectId}`);
+  return apiRequestClient<Project>(`/api/projects/${projectId}`);
 }
 
-export function createProject(project: Omit<Project, "id">) {
-  return apiRequest<Project>("/api/projects", {
+export function createProject(project: ProjectFormValues) {
+  return apiRequestClient<Project>("/api/projects", {
     method: "POST",
-    body: JSON.stringify(project),
+    body: JSON.stringify({
+      name: project.name,
+      description: project.description,
+      ...(project.memberIds ? { memberIds: project.memberIds } : {}),
+    }),
   });
 }
 
-export function updateProject(project: Project) {
-  return apiRequest<Project>(`/api/projects/${project.id}`, {
+export function updateProject(
+  project: ProjectFormValues & Pick<Project, "id">,
+) {
+  return apiRequestClient<Project>(`/api/projects/${project.id}`, {
     method: "PATCH",
-    body: JSON.stringify(project),
+    body: JSON.stringify({
+      name: project.name,
+      description: project.description,
+    }),
   });
 }
 
 export function deleteProject(projectId: string) {
-  return apiRequest<void>(`/api/projects/${projectId}`, { method: "DELETE" });
+  return apiRequestClient<void>(`/api/projects/${projectId}`, { method: "DELETE" });
+}
+
+export function setProjectMembers(projectId: string, userIds: string[]) {
+  return apiRequestClient<Project>(`/api/projects/${projectId}/members`, {
+    method: "PUT",
+    body: JSON.stringify({ userIds }),
+  });
+}
+
+export function addProjectMembers(projectId: string, userIds: string[]) {
+  return apiRequestClient<Project>(`/api/projects/${projectId}/members`, {
+    method: "POST",
+    body: JSON.stringify({ userIds }),
+  });
+}
+
+export function removeProjectMember(projectId: string, userId: string) {
+  return apiRequestClient<Project>(
+    `/api/projects/${projectId}/members/${userId}`,
+    { method: "DELETE" },
+  );
 }
