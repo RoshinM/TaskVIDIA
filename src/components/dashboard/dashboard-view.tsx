@@ -7,20 +7,28 @@ import { ProjectCard } from "@/components/projects/project-card";
 import { TaskManager } from "@/components/tasks/task-manager";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CURRENT_USER_ID } from "@/lib/current-user";
+import { useWorkspaceData } from "@/components/providers/workspace-data-provider";
+import { getFirstName } from "@/lib/utils";
 import { getProjects } from "@/services/project-service";
 import { getMyTasks, getTasks } from "@/services/task-service";
 import type { Project, Task } from "@/types";
 
 export function DashboardView() {
+  const { user } = useWorkspaceData();
+  const firstName = getFirstName(user?.name ?? "");
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [myTasks, setMyTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [today, setToday] = useState("");
 
   useEffect(() => {
-    Promise.all([getProjects(), getTasks(), getMyTasks(CURRENT_USER_ID)])
+    Promise.all([
+      getProjects(),
+      getTasks(),
+      user ? getMyTasks(user.id) : Promise.resolve([] as Task[]),
+    ])
       .then(([projectItems, taskItems, myTaskItems]) => {
         setProjects(projectItems);
         setTasks(taskItems);
@@ -34,13 +42,21 @@ export function DashboardView() {
         );
       })
       .finally(() => setLoading(false));
+  }, [user]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setToday(
+        new Intl.DateTimeFormat("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+        }).format(new Date()),
+      );
+    }, 0);
+    return () => clearTimeout(timeout);
   }, []);
 
-  const today = new Intl.DateTimeFormat("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  }).format(new Date());
   const stats = [
     {
       label: "Total projects",
@@ -64,7 +80,7 @@ export function DashboardView() {
             {today}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Good morning
+            {firstName ? `Welcome back, ${firstName}` : "Welcome back"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Here’s what’s happening across your workspace.

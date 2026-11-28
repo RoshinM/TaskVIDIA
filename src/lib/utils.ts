@@ -13,3 +13,10 @@ export function getInitials(name: string): string {
   const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : undefined;
   return `${first}${last ?? ""}`.toUpperCase();
 }
+
+export function getFirstName(name: string): string {
+  const firstName = name.trim().split(/\s+/)[0];
+  if (!firstName) return "";
+
+  return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+}
