@@ -5,7 +5,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  color: string;
 }
 
 export type { AuthUser, AuthPayload, AuthResponse } from "./auth";
@@ -14,7 +13,6 @@ export interface Project {
   id: string;
   name: string;
   description: string;
-  color: string;
   createdById: string;
   memberIds: string[];
 }
@@ -28,4 +26,11 @@ export interface Task {
   assigneeId: string;
   projectId: string;
   dueDate: string;
+}
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }

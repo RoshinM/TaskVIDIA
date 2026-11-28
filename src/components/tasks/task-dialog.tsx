@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { CURRENT_USER_ID } from "@/lib/current-user";
+import { useWorkspaceData } from "@/components/providers/workspace-data-provider";
 import type { Project, Task, TaskPriority, User } from "@/types";
 
 type TaskValues = Omit<Task, "id">;
@@ -31,7 +31,7 @@ const emptyTask: TaskValues = {
   description: "",
   status: "TODO",
   priority: "MEDIUM",
-  assigneeId: CURRENT_USER_ID,
+  assigneeId: "",
   projectId: "",
   dueDate: "",
 };
@@ -39,18 +39,19 @@ const emptyTask: TaskValues = {
 export function TaskDialog({
   open,
   onOpenChange,
-  projects,
+  project,
   users,
   task,
   onSave,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  projects: Project[];
+  project: Project;
   users: User[];
   task?: Task;
   onSave: (values: TaskValues, task?: Task) => Promise<void>;
 }) {
+  const { user } = useWorkspaceData();
   const [values, setValues] = useState<TaskValues>(() =>
     task
       ? {
@@ -62,14 +63,17 @@ export function TaskDialog({
           projectId: task.projectId,
           dueDate: task.dueDate,
         }
-      : { ...emptyTask, projectId: projects[0]?.id ?? "" },
+      : {
+          ...emptyTask,
+          projectId: project.id,
+          assigneeId: project.memberIds.includes(user?.id ?? "")
+            ? (user?.id ?? "")
+            : (project.memberIds[0] ?? ""),
+        },
   );
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const selectedProject = projects.find((item) => item.id === values.projectId);
-  const assignees = users.filter(
-    (user) => !selectedProject || selectedProject.memberIds.includes(user.id),
-  );
+  const assignees = users.filter((item) => project.memberIds.includes(item.id));
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -98,7 +102,7 @@ export function TaskDialog({
           <DialogDescription>
             {task
               ? "Update the details and keep the team in sync."
-              : "Add a piece of work to your workspace."}
+              : `Add a piece of work to ${project.name}.`}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -131,80 +135,57 @@ export function TaskDialog({
               }
             />
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="space-y-2">
-              <Label>Project</Label>
-              <Select
-                value={values.projectId}
-                onValueChange={(value) => {
-                  if (!value) return;
-                  const nextProject = projects.find(
-                    (item) => item.id === value,
-                  );
-                  const keepAssignee =
-                    nextProject?.memberIds.includes(values.assigneeId) ?? true;
-                  setValues({
-                    ...values,
-                    projectId: value,
-                    assigneeId: keepAssignee
-                      ? values.assigneeId
-                      : (nextProject?.memberIds[0] ?? CURRENT_USER_ID),
-                  });
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Assignee</Label>
-              <Select
-                value={values.assigneeId}
-                onValueChange={(value) =>
-                  value && setValues({ ...values, assigneeId: value })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {assignees.map((user) => (
-                    <SelectItem key={user.id} value={user.id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <Select
-                value={values.priority}
-                onValueChange={(value) =>
-                  value &&
-                  setValues({ ...values, priority: value as TaskPriority })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {priorities.map((priority) => (
-                    <SelectItem key={priority} value={priority}>
-                      {priorityLabels[priority]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label>Assignee</Label>
+            <Select
+              value={values.assigneeId}
+              onValueChange={(value) =>
+                value && setValues({ ...values, assigneeId: value })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {(value: string | null) =>
+                    users.find((item) => item.id === value)?.name ??
+                    "Choose an assignee"
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {assignees.map((item) => (
+                  <SelectItem key={item.id} value={item.id}>
+                    {item.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Priority</Label>
+            <Select
+              value={values.priority}
+              onValueChange={(value) =>
+                value &&
+                setValues({ ...values, priority: value as TaskPriority })
+              }
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {(value: string | null) =>
+                    value
+                      ? (priorityLabels[value as TaskPriority] ?? value)
+                      : "Choose a priority"
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {priorities.map((priority) => (
+                  <SelectItem key={priority} value={priority}>
+                    {priorityLabels[priority]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="task-date">Due date</Label>
@@ -230,7 +211,7 @@ export function TaskDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={saving || projects.length === 0}>
+            <Button type="submit" disabled={saving || assignees.length === 0}>
               {saving ? "Saving…" : task ? "Save changes" : "Create task"}
             </Button>
           </DialogFooter>

@@ -1,41 +1,21 @@
-import { deleteTask, getTask, updateTask } from "@/services/mock-service";
-import type { Task } from "@/types";
+import { apiRequestServer, readJsonBody } from "@/lib/api-server";
 
 type RouteContext = { params: Promise<{ taskId: string }> };
 
 export async function GET(_request: Request, { params }: RouteContext) {
   const { taskId } = await params;
-  const task = await getTask(taskId);
-
-  if (!task)
-    return Response.json({ error: "Task not found." }, { status: 404 });
-  return Response.json(task);
+  return apiRequestServer(`/tasks/${taskId}`);
 }
 
 export async function PATCH(request: Request, { params }: RouteContext) {
   const { taskId } = await params;
-  const existing = await getTask(taskId);
-
-  if (!existing)
-    return Response.json({ error: "Task not found." }, { status: 404 });
-
-  const body = (await request.json()) as Partial<Task>;
-  const updated = {
-    ...existing,
-    ...body,
-    id: taskId,
-    title: body.title?.trim() || existing.title,
-  };
-
-  return Response.json(await updateTask(updated));
+  return apiRequestServer(`/tasks/${taskId}`, {
+    method: "PATCH",
+    body: await readJsonBody(request),
+  });
 }
 
 export async function DELETE(_request: Request, { params }: RouteContext) {
   const { taskId } = await params;
-  const existing = await getTask(taskId);
-
-  if (!existing)
-    return Response.json({ error: "Task not found." }, { status: 404 });
-  await deleteTask(taskId);
-  return new Response(null, { status: 204 });
+  return apiRequestServer(`/tasks/${taskId}`, { method: "DELETE" });
 }

@@ -1,13 +1,15 @@
 "use client";
 
 import { Plus, Search } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { statuses, statusLabels } from "@/components/tasks/task-badge";
 import { TaskDialog } from "@/components/tasks/task-dialog";
 import { TaskTable } from "@/components/tasks/task-table";
+import { useWorkspaceData } from "@/components/providers/workspace-data-provider";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { Pagination } from "@/components/ui/pagination";
 import {
   Select,
   SelectContent,
@@ -15,18 +17,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { users } from "@/data/mock-data";
-import { CURRENT_USER_ID } from "@/lib/current-user";
-import { getProjects } from "@/services/project-service";
 import {
   createTask,
   deleteTask,
-  getMyTasks,
-  getProjectTasks,
-  getTasks,
+  getTasksPage,
   updateTask,
+  type TaskFilters,
 } from "@/services/task-service";
-import type { Project, Task, TaskStatus } from "@/types";
+import type { PaginationMeta, Task, TaskStatus } from "@/types";
+
+const DEFAULT_PAGE_SIZE = 3;
 
 export function TaskManager({
   title,
@@ -41,11 +41,19 @@ export function TaskManager({
   myTasks?: boolean;
   limit?: number;
 }) {
+  const { user, users, projects } = useWorkspaceData();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [projectFilter, setProjectFilter] = useState(projectId ?? "all");
+  const [page, setPage] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [pagination, setPagination] = useState<PaginationMeta>({
+    total: 0,
+    page: 1,
+    limit: limit ?? DEFAULT_PAGE_SIZE,
+    totalPages: 1,
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task>();
   const [deletingTask, setDeletingTask] = useState<Task>();
@@ -53,60 +61,88 @@ export function TaskManager({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      myTasks
-        ? getMyTasks(CURRENT_USER_ID)
-        : projectId
-          ? getProjectTasks(projectId)
-          : getTasks(),
-      getProjects(),
-    ])
-      .then(([taskItems, projectItems]) => {
-        setTasks(taskItems);
-        setProjects(projectItems);
-      })
-      .catch((loadError: unknown) => {
+    if (myTasks && !user) return;
+
+    let active = true;
+
+    void (async () => {
+      await Promise.resolve();
+      if (!active) return;
+      setLoading(true);
+      setError("");
+
+      const filters: TaskFilters = {
+        ...(search.trim() ? { search: search.trim() } : {}),
+        ...(status !== "all" ? { status: status as TaskStatus } : {}),
+        ...(projectFilter !== "all" ? { projectId: projectFilter } : {}),
+        ...(myTasks && user ? { assigneeId: user.id } : {}),
+        page,
+        limit: limit ?? DEFAULT_PAGE_SIZE,
+      };
+
+      try {
+        const result = await getTasksPage(filters);
+        if (!active) return;
+        setTasks(result.tasks);
+        setPagination(result.pagination);
+        setPage((current) =>
+          Math.min(current, Math.max(result.pagination.totalPages, 1)),
+        );
+      } catch (loadError: unknown) {
+        if (!active) return;
         setError(
           loadError instanceof Error
             ? loadError.message
             : "Could not load tasks.",
         );
-      })
-      .finally(() => setLoading(false));
-  }, [myTasks, projectId]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
 
-  const visibleTasks = useMemo(
-    () =>
-      tasks.filter((task) => {
-        const matchesSearch = task.title
-          .toLowerCase()
-          .includes(search.toLowerCase());
-        const matchesStatus = status === "all" || task.status === status;
-        const matchesProject =
-          projectFilter === "all" || task.projectId === projectFilter;
-        return matchesSearch && matchesStatus && matchesProject;
-      }),
-    [tasks, search, status, projectFilter],
-  );
+    return () => {
+      active = false;
+    };
+  }, [
+    myTasks,
+    projectId,
+    user,
+    search,
+    status,
+    projectFilter,
+    page,
+    limit,
+    refreshKey,
+  ]);
 
-  const shownTasks = limit ? visibleTasks.slice(0, limit) : visibleTasks;
+  const shownTasks = limit ? tasks.slice(0, limit) : tasks;
+  const currentProject = projectId
+    ? projects.find((item) => item.id === projectId)
+    : undefined;
+  const dialogProject =
+    currentProject ??
+    projects.find((item) => item.id === editingTask?.projectId);
 
   async function saveTask(values: Omit<Task, "id">, task?: Task) {
-    const saved = task
-      ? await updateTask({ ...values, id: task.id })
-      : await createTask(values);
-    setTasks((current) =>
-      task
-        ? current.map((item) => (item.id === task.id ? saved : item))
-        : [saved, ...current],
-    );
+    try {
+      if (task) await updateTask({ ...values, id: task.id });
+      else await createTask(values);
+      setRefreshKey((current) => current + 1);
+    } catch (saveError) {
+      setError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Could not save this task.",
+      );
+      throw saveError;
+    }
   }
 
   async function removeTask(task: Task) {
     try {
       await deleteTask(task.id);
-      setTasks((current) => current.filter((item) => item.id !== task.id));
       setDeletingTask(undefined);
+      setRefreshKey((current) => current + 1);
     } catch (deleteError) {
       setError(
         deleteError instanceof Error
@@ -118,10 +154,8 @@ export function TaskManager({
 
   async function changeStatus(task: Task, nextStatus: TaskStatus) {
     try {
-      const updated = await updateTask({ ...task, status: nextStatus });
-      setTasks((current) =>
-        current.map((item) => (item.id === task.id ? updated : item)),
-      );
+      await updateTask({ ...task, status: nextStatus });
+      setRefreshKey((current) => current + 1);
     } catch (updateError) {
       setError(
         updateError instanceof Error
@@ -143,21 +177,22 @@ export function TaskManager({
           <h2 className="text-base font-semibold tracking-tight">{title}</h2>
           <p className="mt-1 text-xs text-muted-foreground">{description}</p>
         </div>
-        <Button
-          size="sm"
-          onClick={openNewTask}
-          disabled={projects.length === 0}
-        >
-          <Plus />
-          New task
-        </Button>
+        {!myTasks && currentProject && (
+          <Button size="sm" onClick={openNewTask}>
+            <Plus />
+            New task
+          </Button>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-2 rounded-t-lg border border-border bg-card p-3">
         <div className="relative min-w-48 flex-1 sm:max-w-xs">
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             placeholder="Filter tasks"
             className="h-8 pl-8 text-xs"
           />
@@ -165,10 +200,19 @@ export function TaskManager({
         {!projectId && (
           <Select
             value={projectFilter}
-            onValueChange={(value) => value && setProjectFilter(value)}
+            onValueChange={(value) => {
+              if (!value) return;
+              setProjectFilter(value);
+              setPage(1);
+            }}
           >
             <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue />
+              <SelectValue>
+                {(value: string | null) =>
+                  projects.find((item) => item.id === value)?.name ??
+                  "All projects"
+                }
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All projects</SelectItem>
@@ -182,10 +226,20 @@ export function TaskManager({
         )}
         <Select
           value={status}
-          onValueChange={(value) => value && setStatus(value)}
+          onValueChange={(value) => {
+            if (!value) return;
+            setStatus(value);
+            setPage(1);
+          }}
         >
           <SelectTrigger className="h-8 w-36 text-xs">
-            <SelectValue />
+            <SelectValue>
+              {(value: string | null) =>
+                value && value !== "all"
+                  ? (statusLabels[value as TaskStatus] ?? value)
+                  : "All statuses"
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
@@ -207,28 +261,39 @@ export function TaskManager({
           Loading tasks…
         </div>
       ) : (
-        <TaskTable
-          tasks={shownTasks}
-          projects={projects}
+        <>
+          <TaskTable
+            tasks={shownTasks}
+            projects={projects}
+            users={users}
+            showProject={!projectId}
+            onEdit={(task) => {
+              setEditingTask(task);
+              setDialogOpen(true);
+            }}
+            onDelete={(task) => setDeletingTask(task)}
+            onStatusChange={changeStatus}
+          />
+          {!limit && (
+            <Pagination
+              page={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={setPage}
+            />
+          )}
+        </>
+      )}
+      {dialogProject && (
+        <TaskDialog
+          key={`${editingTask?.id ?? currentProject?.id ?? "new"}-${dialogOpen}`}
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          project={dialogProject}
           users={users}
-          showProject={!projectId}
-          onEdit={(task) => {
-            setEditingTask(task);
-            setDialogOpen(true);
-          }}
-          onDelete={(task) => setDeletingTask(task)}
-          onStatusChange={changeStatus}
+          task={editingTask}
+          onSave={saveTask}
         />
       )}
-      <TaskDialog
-        key={`${editingTask?.id ?? "new"}-${dialogOpen}`}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        projects={projects}
-        users={users}
-        task={editingTask}
-        onSave={saveTask}
-      />
       <ConfirmDialog
         open={Boolean(deletingTask)}
         onOpenChange={(open) => {
