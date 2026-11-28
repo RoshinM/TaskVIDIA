@@ -35,7 +35,7 @@ export default function LoginPage() {
 
     try {
       if (registering) {
-        const result = await registerRequest(
+        await registerRequest(
           String(form.get("name") ?? ""),
           email,
           password,
@@ -47,7 +47,7 @@ export default function LoginPage() {
         return;
       }
 
-      const result = await loginRequest(email, password);
+      await loginRequest(email, password);
       router.push("/");
     } catch (submitError) {
       setError(

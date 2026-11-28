@@ -1,26 +1,22 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { THEME_COOKIE, type Theme } from "@/lib/theme";
 
 export function ThemeToggle() {
-  useEffect(() => {
-    const preference = localStorage.getItem("taskvidia-theme");
-    const dark = preference
-      ? preference === "dark"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches;
-    document.documentElement.classList.toggle("dark", dark);
-    document.documentElement.classList.toggle("light", preference === "light");
-  }, []);
-
   function toggleTheme() {
-    const html = document.documentElement;
-    const nextDark =
-      html.classList.contains("light") || !html.classList.contains("dark");
-    html.classList.toggle("dark", nextDark);
-    html.classList.toggle("light", !nextDark);
-    localStorage.setItem("taskvidia-theme", nextDark ? "dark" : "light");
+    const root = document.documentElement;
+    const nextTheme: Theme = root.classList.contains("dark")
+      ? "light"
+      : "dark";
+
+    root.classList.toggle("dark", nextTheme === "dark");
+    root.classList.toggle("light", nextTheme === "light");
+    root.style.colorScheme = nextTheme;
+
+    const secure = window.location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `${THEME_COOKIE}=${nextTheme}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
   }
 
   return (
